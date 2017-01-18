@@ -1,15 +1,12 @@
 #!/bin/bash
 
-if [ ! -z $1 ]; then
+echo Envoking mySQL service and requesting version information as a Test 
+echo of the service.
+echo *******************************************************************
 
-  sudo yum -y install mysql
+POD_NODE_IP=`kubectl describe pod mysql | grep Node | awk -F "/" '{ print $2 }'`
 
-  mysql -uroot -p -h$1 <<!
-    show variables like '%version%';
+mysql -uroot -pyourpassword -h$POD_NODE_IP <<!
+  show variables like '%version%';
 !
 
-else 
-
-  echo "Please include the sql service ip as the first parameter"
-
-fi

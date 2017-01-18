@@ -1,9 +1,12 @@
 #!/bin/bash
 
 INTERNAL_IP=$1
-echo INTERNAL_IP = $INTERNAL_IP
+CONTROLLER_IP=$3
+echo INTERNAL_IP = $INTERNAL_IP, CONTROLLER_IP = $CONTROLLER_IP
 
 if [ $2 == "0" ]; then
+  NODE="USER"
+elif [ $2 == "1" ]; then
   NODE="MASTER"
 else
   NODE="WORKER"
@@ -17,8 +20,21 @@ sudo yum -y install ntp
 sudo systemctl start ntpd
 sudo systemctl enable ntpd
 
-if [ $NODE == "MASTER" ]; then
-  echo Provisioning the MASTER
+if [ $NODE == "USER" ]; then
+  
+  cd /vagrant
+  echo Provisioning the USER at `pwd`
+
+  if ! [ -f kubectl ]; then
+    wget https://storage.googleapis.com/kubernetes-release/release/v1.4.0/bin/linux/amd64/kubectl
+    chmod +x kubectl
+  fi
+  sudo cp kubectl /usr/bin/
+
+  sudo yum -y install mysql
+
+elif [ $NODE == "MASTER" ]; then
+  echo Provisioning the MASTER at `pwd`
 
   sudo yum -y install etcd kubernetes
   
@@ -65,24 +81,24 @@ if [ $NODE == "MASTER" ]; then
 
   kubectl get nodes
 
-else # not MASTER
+else # not MASTER or USER
 
-  echo Provisioning a WORKER
+  echo Provisioning a WORKER at `pwd`
 
   sudo yum -y install flannel kubernetes
 
   # EDIT w/sed /etc/sysconfig/flanneld to ensure we have:
-  #FLANNEL_ETCD_ENDPOINTS="http://192.168.50.130:2379"
+  #FLANNEL_ETCD_ENDPOINTS="http://$CONTROLLER_IP:2379"
 
   sudo sed -i \
-    -e s%.*FLANNEL_ETCD_ENDPOINTS=.*$%FLANNEL_ETCD_ENDPOINTS=\"http://192.168.50.130:2379\"%g \
+    -e s%.*FLANNEL_ETCD_ENDPOINTS=.*$%FLANNEL_ETCD_ENDPOINTS=\"http://$CONTROLLER_IP:2379\"%g \
     /etc/sysconfig/flanneld #### > fl.conf
 
   # EDIT w/sed /etc/kubernetes/config to ensure we have:
-  #KUBE_MASTER="--master=http://192.168.50.130:8080"
+  #KUBE_MASTER="--master=http://$CONTROLLER_IP:8080"
 
   sudo sed -i \
-    -e s%.*KUBE_MASTER=.*$%KUBE_MASTER=\"--master=http://192.168.50.130:8080\"%g \
+    -e s%.*KUBE_MASTER=.*$%KUBE_MASTER=\"--master=http://$CONTROLLER_IP:8080\"%g \
     /etc/kubernetes/config #### > kube.conf
 
   # EDIT w/sed /etc/kubernetes/kubelet to ensure we have:
@@ -90,14 +106,14 @@ else # not MASTER
   #KUBELET_PORT="--port=10250"
   # change the hostname to this host’s IP address
   #KUBELET_HOSTNAME="--hostname_override=$INTERNAL_IP"
-  #KUBELET_API_SERVER="--api_servers=http://192.168.50.130:8080"
+  #KUBELET_API_SERVER="--api_servers=http://$CONTROLLER_IP:8080"
   #KUBELET_ARGS=""
 
   sudo sed -i \
     -e s%.*KUBELET_ADDRESS=.*$%KUBELET_ADDRESS=\"--address=0.0.0.0\"%g \
     -e s%.*KUBELET_PORT=.*$%KUBELET_PORT=\"--port=10250\"%g \
     -e s%.*KUBELET_HOSTNAME=.*$%KUBELET_HOSTNAME=\"--hostname_override=$INTERNAL_IP\"%g \
-    -e s%.*KUBELET_API_SERVER=.*$%KUBELET_API_SERVER=\"--api_servers=http://192.168.50.130:8080\"%g \
+    -e s%.*KUBELET_API_SERVER=.*$%KUBELET_API_SERVER=\"--api_servers=http://$CONTROLLER_IP:8080\"%g \
     -e s%.*KUBELET_ARGS=.*$%KUBELET_ARGS=\"\"%g \
     /etc/kubernetes/kubelet ####> kubelet.conf
 
