@@ -35,7 +35,7 @@ How to use:
 * Then from inside machine0:
 * "/vagrant/kubectl_setup_remote.sh" to configure kubectl to work remotely
 * "/vagrant/AfterUp.sh" to create the SQL service
-* "/vagrant/ClientDo.sh" This is to smoke test whether mySQL is working. This should result in some general version related information as output from mySQL is it is working properly.  
+* "/vagrant/ClientDo.sh" This is to smoke test whether mySQL is working. This should result in some general version related information as output from mySQL if it is working properly.  
 
 Discussion:
 My goal is to has several environments where I can explore the kubernetes infrastructure more completely. This project creates a simple environment less complicated than what we would have in a production environment so we can see the individual parts work or not. I put this together after running into networking issues on a more complicated HA cluster but see the same issues here. 
