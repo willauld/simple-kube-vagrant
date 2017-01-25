@@ -16,9 +16,11 @@ echo NODE        = $NODE
 sudo systemctl stop firewalld
 sudo systemctl disable firewalld
 
+if [ -z "$DO_NTP" ]; then # not really needed for this cluster
 sudo yum -y install ntp
 sudo systemctl start ntpd
 sudo systemctl enable ntpd
+fi
 
 if [ $NODE == "USER" ]; then
   
